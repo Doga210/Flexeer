@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# إعدادات النظام
+# System Settings
 SIGNUP_BONUS = 5.0
 REF_REWARD = 0.05
 FIRST_TX_BONUS = 1.0
@@ -34,16 +34,16 @@ def register_user(username, password, ref_by=None):
         )
         user_id = cursor.lastrowid
         
-        # تسجيل مكافأة التسجيل
-        db.execute("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'SIGNUP', 'هدية التسجيل')", (user_id, SIGNUP_BONUS))
+        # Register signup bonus
+        db.execute("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'SIGNUP', 'Signup Reward')", (user_id, SIGNUP_BONUS))
         
-        # مكافأة الإحالة
+        # Referral reward
         if ref_by:
             referrer = db.execute("SELECT id FROM users WHERE invite_code = ?", (ref_by,)).fetchone()
             if referrer:
                 db.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (REF_REWARD, referrer['id']))
                 db.execute("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'REF_REWARD', ?)", 
-                           (referrer['id'], REF_REWARD, f"إحالة مستخدم جديد: {username}"))
+                           (referrer['id'], REF_REWARD, f"New referral: {username}"))
             
         db.commit()
         return True
@@ -85,17 +85,17 @@ def daily_reward(user_id):
     
     if user['last_daily'] == today:
         db.close()
-        return False, "لقد استلمت مكافأتك اليومية بالفعل!"
+        return False, "You have already claimed your daily reward today!"
     
     db.execute("UPDATE users SET balance = balance + ?, last_daily = ? WHERE id = ?", (DAILY_REWARD, today, user_id))
-    db.execute("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'DAILY', 'المكافأة اليومية')", (user_id, DAILY_REWARD))
+    db.execute("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'DAILY', 'Daily Reward')", (user_id, DAILY_REWARD))
     db.commit()
     db.close()
-    return True, f"تم استلام {DAILY_REWARD} GIZ بنجاح!"
+    return True, f"Successfully received {DAILY_REWARD} GIZ!"
 
 def send_money(sender_id, receiver_id, amount):
     if amount < MIN_TRANSFER:
-        return f"الحد الأدنى للتحويل هو {MIN_TRANSFER} GIZ"
+        return f"Minimum transfer amount is {MIN_TRANSFER} GIZ"
     
     db = get_db()
     sender = db.execute("SELECT balance, username FROM users WHERE id = ?", (sender_id,)).fetchone()
@@ -103,22 +103,22 @@ def send_money(sender_id, receiver_id, amount):
     
     if sender['balance'] < amount:
         db.close()
-        return "رصيدك غير كافٍ"
+        return "Insufficient balance"
 
-    # مكافأة أول تحويل
+    # First transaction bonus
     tx_count = db.execute("SELECT COUNT(*) FROM transactions WHERE user_id = ? AND type = 'TRANSFER_OUT'", (sender_id,)).fetchone()[0]
     bonus = FIRST_TX_BONUS if tx_count == 0 else 0.0
 
-    # تنفيذ العملية
+    # Execute transaction
     db.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (amount, sender_id))
     db.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount + bonus, receiver_id))
     
-    # تسجيل العمليات
+    # Record transactions
     db.execute("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'TRANSFER_OUT', ?)", 
-               (sender_id, -amount, f"إرسال إلى {receiver['username']}"))
+               (sender_id, -amount, f"Sent to {receiver['username']}"))
     db.execute("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'TRANSFER_IN', ?)", 
-               (receiver_id, amount + bonus, f"استلام من {sender['username']} {f'+ مكافأة {bonus}' if bonus > 0 else ''}"))
+               (receiver_id, amount + bonus, f"Received from {sender['username']} {f'+ bonus {bonus}' if bonus > 0 else ''}"))
     
     db.commit()
     db.close()
-    return f"تم التحويل بنجاح! المكافأة الممنوحة: {bonus} GIZ"
+    return f"Transfer successful! Bonus awarded: {bonus} GIZ"

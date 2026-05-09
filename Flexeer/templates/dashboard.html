@@ -2,36 +2,36 @@
 
 {% block content %}
 <div class="nav">
-    <span style="font-weight: bold;">👋 مرحباً، {{ user['username'] }}</span>
-    <a href="{{ url_for('logout') }}" style="color: var(--error);">تسجيل الخروج</a>
+    <span style="font-weight: bold;">👋 Welcome, {{ user['username'] }}</span>
+    <a href="{{ url_for('logout') }}" style="color: var(--error);">Logout</a>
 </div>
 
 <div class="card balance-card">
-    <div style="color: var(--text-muted); font-size: 0.9em;">رصيدك الحالي</div>
+    <div style="color: var(--text-muted); font-size: 0.9em;">Current Balance</div>
     <div class="balance-amount">{{ "%.2f"|format(user['balance']) }} GIZ</div>
-    <div style="margin-bottom: 15px;">كود الإحالة: <span class="copy-code" title="اضغط للنسخ">{{ user['invite_code'] }}</span></div>
+    <div style="margin-bottom: 15px;">Referral Code: <span class="copy-code" title="Click to copy">{{ user['invite_code'] }}</span></div>
     <a href="{{ url_for('daily') }}" style="text-decoration: none;">
-        <button style="background: var(--success); width: auto; padding: 10px 25px;">🎁 استلم المكافأة اليومية</button>
+        <button style="background: var(--success); width: auto; padding: 10px 25px;">🎁 Claim Daily Reward</button>
     </a>
 </div>
 
 <div class="card">
-    <h2>💸 تحويل رصيد</h2>
+    <h2>💸 Transfer Balance</h2>
     <form action="{{ url_for('transfer') }}" method="POST">
         <div class="form-group">
-            <label>اسم المستخدم للمستلم</label>
-            <input type="text" name="receiver" required placeholder="أدخل اسم المستخدم بدقة">
+            <label>Recipient Username</label>
+            <input type="text" name="receiver" required placeholder="Enter exact username">
         </div>
         <div class="form-group">
-            <label>المبلغ (الحد الأدنى 10.00)</label>
+            <label>Amount (Min 10.00)</label>
             <input type="number" name="amount" step="0.01" min="10" required placeholder="0.00">
         </div>
-        <button type="submit">إرسال GIZ الآن</button>
+        <button type="submit">Send GIZ Now</button>
     </form>
 </div>
 
 <div class="card">
-    <h2>📜 سجل العمليات</h2>
+    <h2>📜 Transaction History</h2>
     <ul class="tx-list">
         {% for tx in transactions %}
         <li class="tx-item">
@@ -45,7 +45,7 @@
             </div>
         </li>
         {% else %}
-        <li style="text-align: center; color: var(--text-muted); padding: 20px;">لا توجد عمليات مسجلة حتى الآن</li>
+        <li style="text-align: center; color: var(--text-muted); padding: 20px;">No transactions recorded yet</li>
         {% endfor %}
     </ul>
 </div>
@@ -53,7 +53,7 @@
 <script>
     document.querySelector('.copy-code').addEventListener('click', function() {
         navigator.clipboard.writeText(this.innerText);
-        alert('تم نسخ كود الإحالة!');
+        alert('Referral code copied!');
     });
 </script>
 {% endblock %}

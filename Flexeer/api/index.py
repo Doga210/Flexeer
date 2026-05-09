@@ -27,7 +27,7 @@ def login():
             session['user_id'] = user['id']
             return redirect(url_for('dashboard'))
         else:
-            flash("اسم المستخدم أو كلمة المرور غير صحيحة", "error")
+            flash("Incorrect username or password", "error")
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -37,10 +37,10 @@ def register():
         password = request.form.get('password')
         ref_by = request.form.get('ref_by')
         if logic.register_user(username, password, ref_by):
-            flash("تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول.", "success")
+            flash("Registration successful! You can now log in.", "success")
             return redirect(url_for('login'))
         else:
-            flash("اسم المستخدم موجود بالفعل أو حدث خطأ", "error")
+            flash("Username already exists or an error occurred", "error")
     return render_template('register.html', ref=request.args.get('ref', ''))
 
 @app.route('/dashboard')
@@ -70,17 +70,17 @@ def transfer():
     try:
         amount = float(request.form.get('amount', 0))
     except ValueError:
-        flash("المبلغ غير صحيح", "error")
+        flash("Invalid amount", "error")
         return redirect(url_for('dashboard'))
     
     receiver = logic.get_user_by_username(receiver_username)
     if not receiver:
-        flash("المستلم غير موجود", "error")
+        flash("Recipient not found", "error")
     elif receiver['id'] == session['user_id']:
-        flash("لا يمكنك التحويل لنفسك", "error")
+        flash("You cannot transfer to yourself", "error")
     else:
         result = logic.send_money(session['user_id'], receiver['id'], amount)
-        flash(result, "success" if "بنجاح" in result else "error")
+        flash(result, "success" if "successful" in result.lower() else "error")
     
     return redirect(url_for('dashboard'))
 
