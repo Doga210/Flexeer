@@ -11,5 +11,8 @@
       "src": "/(.*)",
       "dest": "Flexeer/api/index.py"
     }
-  ]
+  ],
+  "env": {
+    "DATABASE_URL": "postgresql://postgres:dogaAHMED21%40%23@db.hedooxltmmumiscvynsp.supabase.co:5432/postgres"
+  }
 }
