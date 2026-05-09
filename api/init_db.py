@@ -9,11 +9,6 @@ def setup_database():
     conn, is_pg = logic.get_db()
     cursor = conn.cursor()
 
-    # WIPE DATA (Optional: Remove after use)
-    print("⚠️ Wiping existing tables...")
-    cursor.execute("DROP TABLE IF EXISTS transactions CASCADE")
-    cursor.execute("DROP TABLE IF EXISTS users CASCADE")
-
     # User table
     id_type = "SERIAL PRIMARY KEY" if is_pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
     
