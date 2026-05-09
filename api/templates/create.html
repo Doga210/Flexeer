@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card">
+    <h1>Secret Phrase</h1>
+    <p>Please write down these 24 words in order and keep them safe. This is the <strong>only</strong> way to access your wallet.</p>
+    
+    <div class="seed-grid">
+        {% for word in phrase.split() %}
+        <div class="seed-word">{{ loop.index }}. <span>{{ word }}</span></div>
+        {% endfor %}
+    </div>
+
+    <form method="POST">
+        <input type="hidden" name="seed_phrase" value="{{ phrase }}">
+        <button type="submit" class="btn btn-primary">I've Saved It, Continue</button>
+    </form>
+    <p style="font-size: 0.8rem; color: var(--error);">Never share this phrase with anyone!</p>
+</div>
+{% endblock %}

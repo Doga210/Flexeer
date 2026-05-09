@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card">
+    <h1>Flexeer</h1>
+    <p>The simplest way to manage your digital assets. Secure, private, and decentralized.</p>
+    <a href="{{ url_for('create') }}" class="btn btn-primary">Create New Wallet</a>
+    <a href="{{ url_for('login') }}" class="btn btn-outline">Access Existing Wallet</a>
+</div>
+{% endblock %}

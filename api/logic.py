@@ -3,7 +3,6 @@ import secrets
 import string
 import os
 from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
 from mnemonic import Mnemonic
 
 # Try to import psycopg2 for PostgreSQL support
@@ -16,11 +15,7 @@ except ImportError:
 
 # System Settings
 SIGNUP_BONUS = 5.0
-REF_REWARD = 0.05
-FIRST_TX_BONUS = 1.0
-MIN_TRANSFER = 10.0
-DAILY_REWARD = 0.1
-
+DAILY_REWARD = 0.5
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "flexeer.db")
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
@@ -37,128 +32,84 @@ def get_db():
 
 def query_db(query, params=(), one=False):
     conn, is_pg = get_db()
-    if is_pg:
-        query = query.replace('?', '%s')
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-    else:
-        cur = conn.cursor()
-    
-    cur.execute(query, params)
-    rv = cur.fetchall()
-    cur.close()
-    conn.close()
-    return (rv[0] if rv else None) if one else rv
+    try:
+        if is_pg:
+            query = query.replace('?', '%s')
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+        else:
+            cur = conn.cursor()
+        cur.execute(query, params)
+        rv = cur.fetchall()
+        cur.close()
+        return (rv[0] if rv else None) if one else rv
+    finally:
+        conn.close()
 
 def execute_db(query, params=(), returning_id=False):
     conn, is_pg = get_db()
-    if is_pg:
-        query = query.replace('?', '%s')
-        if returning_id:
-            query += " RETURNING id"
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-    else:
-        cur = conn.cursor()
-    
-    cur.execute(query, params)
-    last_id = None
-    if returning_id:
+    try:
         if is_pg:
-            last_id = cur.fetchone()['id']
+            query = query.replace('?', '%s')
+            if returning_id:
+                query += " RETURNING id"
+            cur = conn.cursor(cursor_factory=RealDictCursor)
         else:
-            last_id = cur.lastrowid
-            
-    conn.commit()
-    cur.close()
-    conn.close()
-    return last_id
+            cur = conn.cursor()
+        
+        cur.execute(query, params)
+        last_id = None
+        if returning_id:
+            if is_pg:
+                last_id = cur.fetchone()['id']
+            else:
+                last_id = cur.lastrowid
+        conn.commit()
+        cur.close()
+        return last_id
+    finally:
+        conn.close()
 
 def generate_seed_phrase():
-    return mnemo.generate(strength=256) # 24 words
+    return mnemo.generate(strength=256)
 
-def generate_ref_code():
+def generate_invite_code():
     chars = string.ascii_uppercase + string.digits
     return "FLX-" + ''.join(secrets.choice(chars) for _ in range(6))
 
-def register_user(seed_phrase, ref_by=None):
+def create_wallet(seed_phrase):
     if not mnemo.check(seed_phrase):
         return False
     
-    my_code = generate_ref_code()
+    invite_code = generate_invite_code()
     try:
-        # Use first 3 words as a public 'display name'
-        display_name = " ".join(seed_phrase.split()[:3]) + "..."
-        
         user_id = execute_db(
-            "INSERT INTO users (seed_phrase, username, balance, invite_code, referred_by) VALUES (?, ?, ?, ?, ?)",
-            (seed_phrase, display_name, SIGNUP_BONUS, my_code, ref_by),
+            "INSERT INTO users (seed_phrase, invite_code, balance) VALUES (?, ?, ?)",
+            (seed_phrase.strip(), invite_code, SIGNUP_BONUS),
             returning_id=True
         )
-        
-        # Register signup bonus
-        execute_db("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'SIGNUP', 'Signup Reward')", (user_id, SIGNUP_BONUS))
-        
-        # Referral reward
-        if ref_by:
-            referrer = query_db("SELECT id FROM users WHERE invite_code = ?", (ref_by,), one=True)
-            if referrer:
-                execute_db("UPDATE users SET balance = balance + ? WHERE id = ?", (REF_REWARD, referrer['id']))
-                execute_db("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'REF_REWARD', ?)", 
-                           (referrer['id'], REF_REWARD, f"New referral"))
-        return True
-    except Exception as e:
-        print(f"Registration error: {e}")
+        execute_db("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'SIGNUP', 'Welcome Bonus')", (user_id, SIGNUP_BONUS))
+        return user_id
+    except:
         return False
 
-def login_user(seed_phrase):
-    if not mnemo.check(seed_phrase.strip()):
+def login_wallet(seed_phrase):
+    phrase = seed_phrase.strip()
+    if not mnemo.check(phrase):
         return None
-    user = query_db("SELECT * FROM users WHERE seed_phrase = ?", (seed_phrase.strip(),), one=True)
-    return user
+    return query_db("SELECT * FROM users WHERE seed_phrase = ?", (phrase,), one=True)
 
-def get_user_by_id(user_id):
+def get_user(user_id):
     return query_db("SELECT * FROM users WHERE id = ?", (user_id,), one=True)
-
-def get_user_by_username(username):
-    # This might return multiple if display names clash, but it's used for transfers
-    return query_db("SELECT * FROM users WHERE username = ?", (username,), one=True)
 
 def get_transactions(user_id):
     return query_db("SELECT * FROM transactions WHERE user_id = ? ORDER BY timestamp DESC", (user_id,))
 
-def daily_reward(user_id):
-    user = query_db("SELECT last_daily FROM users WHERE id = ?", (user_id,), one=True)
+def claim_daily(user_id):
+    user = get_user(user_id)
     today = datetime.now().strftime('%Y-%m-%d')
-    
     if user['last_daily'] == today:
-        return False, "You have already claimed your daily reward today!"
+        return False, "Already claimed today!"
     
     execute_db("UPDATE users SET balance = balance + ?, last_daily = ? WHERE id = ?", (DAILY_REWARD, today, user_id))
     execute_db("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'DAILY', 'Daily Reward')", (user_id, DAILY_REWARD))
-    return True, f"Successfully received {DAILY_REWARD} GIZ!"
-
-def send_money(sender_id, receiver_id, amount):
-    if amount < MIN_TRANSFER:
-        return f"Minimum transfer amount is {MIN_TRANSFER} GIZ"
-    
-    sender = query_db("SELECT balance, username FROM users WHERE id = ?", (sender_id,), one=True)
-    receiver = query_db("SELECT username FROM users WHERE id = ?", (receiver_id,), one=True)
-    
-    if sender['balance'] < amount:
-        return "Insufficient balance"
-
-    # First transaction bonus
-    tx_count_res = query_db("SELECT COUNT(*) as count FROM transactions WHERE user_id = ? AND type = 'TRANSFER_OUT'", (sender_id,), one=True)
-    tx_count = tx_count_res['count']
-    bonus = FIRST_TX_BONUS if tx_count == 0 else 0.0
-
-    # Execute transaction
-    execute_db("UPDATE users SET balance = balance - ? WHERE id = ?", (amount, sender_id))
-    execute_db("UPDATE users SET balance = balance + ? WHERE id = ?", (amount + bonus, receiver_id))
-    
-    # Record transactions
-    execute_db("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'TRANSFER_OUT', ?)", 
-               (sender_id, -amount, f"Sent to {receiver['username']}"))
-    execute_db("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'TRANSFER_IN', ?)", 
-               (receiver_id, amount + bonus, f"Received from {sender['username']} {f'+ bonus {bonus}' if bonus > 0 else ''}"))
-    
-    return f"Transfer successful! Bonus awarded: {bonus} GIZ"
+    return True, f"Claimed {DAILY_REWARD} GIZ!"

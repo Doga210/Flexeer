@@ -1,59 +1,41 @@
 {% extends "layout.html" %}
-
 {% block content %}
-<div class="nav">
-    <span style="font-weight: bold;">👋 Welcome, {{ user['username'] }}</span>
-    <a href="{{ url_for('logout') }}" style="color: var(--error);">Logout</a>
+<div class="nav" style="display: flex; justify-content: space-between; margin-bottom: 20px; width: 100%;">
+    <span style="font-weight: 600;">Flexeer Wallet</span>
+    <a href="{{ url_for('logout') }}" style="color: var(--error); text-decoration: none; font-size: 0.9rem;">Logout</a>
 </div>
 
-<div class="card balance-card">
-    <div style="color: var(--text-muted); font-size: 0.9em;">Current Balance</div>
-    <div class="balance-amount">{{ "%.2f"|format(user['balance']) }} GIZ</div>
-    <div style="margin-bottom: 15px;">Referral Code: <span class="copy-code" title="Click to copy">{{ user['invite_code'] }}</span></div>
-    <a href="{{ url_for('daily') }}" style="text-decoration: none;">
-        <button style="background: var(--success); width: auto; padding: 10px 25px;">🎁 Claim Daily Reward</button>
-    </a>
+<div class="balance-box">
+    <div class="balance-label">Total Balance</div>
+    <div class="balance-value">{{ "%.2f"|format(user['balance']) }} GIZ</div>
 </div>
 
-<div class="card">
-    <h2>💸 Transfer Balance</h2>
-    <form action="{{ url_for('transfer') }}" method="POST">
-        <div class="form-group">
-            <label>Recipient Username</label>
-            <input type="text" name="receiver" required placeholder="Enter exact username">
+<div class="card" style="padding: 25px; margin-bottom: 25px; text-align: left;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <div style="font-size: 0.8rem; color: var(--text-dim);">Invite Code</div>
+            <div style="font-weight: bold; font-family: monospace; letter-spacing: 1px;">{{ user['invite_code'] }}</div>
         </div>
-        <div class="form-group">
-            <label>Amount (Min 10.00)</label>
-            <input type="number" name="amount" step="0.01" min="10" required placeholder="0.00">
-        </div>
-        <button type="submit">Send GIZ Now</button>
-    </form>
+        <a href="{{ url_for('daily') }}" class="btn btn-primary" style="width: auto; margin-bottom: 0; padding: 10px 20px; font-size: 0.8rem;">🎁 Claim Daily</a>
+    </div>
 </div>
 
-<div class="card">
-    <h2>📜 Transaction History</h2>
-    <ul class="tx-list">
+<div class="card" style="padding: 25px;">
+    <h2 style="font-size: 1.2rem; margin-top: 0; margin-bottom: 20px; text-align: left;">Recent Activity</h2>
+    <div class="tx-list">
         {% for tx in transactions %}
-        <li class="tx-item">
-            <div style="flex-grow: 1; margin-left: 10px;">
-                <div style="font-weight: bold;">{{ tx['type'] }}</div>
-                <div style="font-size: 0.85em; color: var(--text-muted);">{{ tx['details'] }}</div>
-                <div style="font-size: 0.7em; color: #64748b; margin-top: 4px;">{{ tx['timestamp'] }}</div>
+        <div class="tx-item">
+            <div class="tx-info">
+                <span class="tx-type">{{ tx['type'] }}</span>
+                <span class="tx-date">{{ tx['timestamp'] }}</span>
             </div>
-            <div class="tx-amount {% if tx['amount'] > 0 %}tx-positive{% else %}tx-negative{% endif %}" style="white-space: nowrap;">
+            <div class="tx-amount {% if tx['amount'] > 0 %}tx-plus{% else %}tx-minus{% endif %}">
                 {{ "%+.2f"|format(tx['amount']) }}
             </div>
-        </li>
+        </div>
         {% else %}
-        <li style="text-align: center; color: var(--text-muted); padding: 20px;">No transactions recorded yet</li>
+        <p style="text-align: center; margin: 20px 0;">No transactions yet.</p>
         {% endfor %}
-    </ul>
+    </div>
 </div>
-
-<script>
-    document.querySelector('.copy-code').addEventListener('click', function() {
-        navigator.clipboard.writeText(this.innerText);
-        alert('Referral code copied!');
-    });
-</script>
 {% endblock %}
