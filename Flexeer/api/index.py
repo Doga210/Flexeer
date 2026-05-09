@@ -43,6 +43,19 @@ def register():
             flash("Username already exists or an error occurred", "error")
     return render_template('register.html', ref=request.args.get('ref', ''))
 
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        invite_code = request.form.get('invite_code')
+        new_password = request.form.get('new_password')
+        if logic.reset_password(username, invite_code, new_password):
+            flash("Password reset successful! You can now log in.", "success")
+            return redirect(url_for('login'))
+        else:
+            flash("Invalid username or invite code", "error")
+    return render_template('forgot_password.html')
+
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
