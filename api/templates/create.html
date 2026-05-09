@@ -2,9 +2,9 @@
 {% block content %}
 <div class="card">
     <h1>Secret Phrase</h1>
-    <p>Please write down these 24 words in order and keep them safe. This is the <strong>only</strong> way to access your wallet.</p>
+    <p>Please write down these 3 words in order and keep them safe. This is the <strong>only</strong> way to access your wallet.</p>
     
-    <div class="seed-grid">
+    <div class="seed-grid" style="grid-template-columns: repeat(3, 1fr);">
         {% for word in phrase.split() %}
         <div class="seed-word">{{ loop.index }}. <span>{{ word }}</span></div>
         {% endfor %}

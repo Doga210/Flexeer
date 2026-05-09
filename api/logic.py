@@ -70,21 +70,23 @@ def execute_db(query, params=(), returning_id=False):
         conn.close()
 
 def generate_seed_phrase():
-    return mnemo.generate(strength=256)
+    words = mnemo.wordlist
+    return " ".join(secrets.choice(words) for _ in range(3))
 
 def generate_invite_code():
     chars = string.ascii_uppercase + string.digits
     return "FLX-" + ''.join(secrets.choice(chars) for _ in range(6))
 
 def create_wallet(seed_phrase):
-    if not mnemo.check(seed_phrase):
+    phrase = seed_phrase.strip().lower()
+    if len(phrase.split()) != 3:
         return False
     
     invite_code = generate_invite_code()
     try:
         user_id = execute_db(
             "INSERT INTO users (seed_phrase, invite_code, balance) VALUES (?, ?, ?)",
-            (seed_phrase.strip(), invite_code, SIGNUP_BONUS),
+            (phrase, invite_code, SIGNUP_BONUS),
             returning_id=True
         )
         execute_db("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'SIGNUP', 'Welcome Bonus')", (user_id, SIGNUP_BONUS))
@@ -93,8 +95,8 @@ def create_wallet(seed_phrase):
         return False
 
 def login_wallet(seed_phrase):
-    phrase = seed_phrase.strip()
-    if not mnemo.check(phrase):
+    phrase = seed_phrase.strip().lower()
+    if len(phrase.split()) != 3:
         return None
     return query_db("SELECT * FROM users WHERE seed_phrase = ?", (phrase,), one=True)
 
