@@ -47,13 +47,12 @@ def register():
 def forgot_password():
     if request.method == 'POST':
         username = request.form.get('username')
-        invite_code = request.form.get('invite_code')
         new_password = request.form.get('new_password')
-        if logic.reset_password(username, invite_code, new_password):
+        if logic.reset_password(username, new_password):
             flash("Password reset successful! You can now log in.", "success")
             return redirect(url_for('login'))
         else:
-            flash("Invalid username or invite code", "error")
+            flash("Username not found", "error")
     return render_template('forgot_password.html')
 
 @app.route('/dashboard')

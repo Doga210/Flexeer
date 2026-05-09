@@ -78,9 +78,9 @@ def get_transactions(user_id):
     db.close()
     return txs
 
-def reset_password(username, invite_code, new_password):
+def reset_password(username, new_password):
     db = get_db()
-    user = db.execute("SELECT id FROM users WHERE username = ? AND invite_code = ?", (username, invite_code)).fetchone()
+    user = db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
     if user:
         hashed_password = generate_password_hash(new_password)
         db.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_password, user['id']))
