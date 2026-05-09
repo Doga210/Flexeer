@@ -2,14 +2,21 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import sys
 import os
 
-# إضافة المسار الحالي لتمكين استيراد logic
+# Add current path to enable logic import
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import logic
+import init_db
 
 app = Flask(__name__, template_folder="../templates")
 app.secret_key = "flexeer_secret_key_123"
+
+# Initialize DB if on Vercel/Postgres
+try:
+    init_db.setup_database()
+except Exception as e:
+    print(f"DB Init check: {e}")
 
 @app.route('/')
 def index():
