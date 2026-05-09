@@ -1,19 +1,35 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="card">
-    <h1>Secret Phrase</h1>
-    <p>Please write down these 3 words in order and keep them safe. This is the <strong>only</strong> way to access your wallet.</p>
+<div class="card" style="max-width: 600px; width: 100%;">
+    <h1>Backup Phrase</h1>
+    <p style="margin-bottom: 20px;">Write down these 24 words in the exact order. This phrase is the key to your funds.</p>
     
-    <div class="seed-grid" style="grid-template-columns: repeat(3, 1fr);">
+    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid var(--error); color: var(--error); padding: 15px; border-radius: 12px; margin-bottom: 25px; font-size: 0.85rem; font-weight: 600;">
+        ⚠️ IMPORTANT: Save these words now! They cannot be recovered if lost. Never share them with anyone.
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 25px;" id="seed-container">
         {% for word in phrase.split() %}
-        <div class="seed-word">{{ loop.index }}. <span>{{ word }}</span></div>
+        <div style="background: #0b0f1a; border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; text-align: left; font-family: monospace; font-size: 0.9rem;">
+            <span style="color: var(--text-dim); margin-right: 8px; font-size: 0.75rem;">{{ loop.index }}</span>
+            <span style="font-weight: bold; color: white;">{{ word }}</span>
+        </div>
         {% endfor %}
     </div>
 
+    <button onclick="copyAll()" class="btn btn-outline" style="margin-bottom: 20px;">📋 Copy All Words</button>
+
     <form method="POST">
         <input type="hidden" name="seed_phrase" value="{{ phrase }}">
-        <button type="submit" class="btn btn-primary">I've Saved It, Continue</button>
+        <button type="submit" class="btn btn-primary">I've Safely Stored Them</button>
     </form>
-    <p style="font-size: 0.8rem; color: var(--error);">Never share this phrase with anyone!</p>
 </div>
+
+<script>
+function copyAll() {
+    const phrase = "{{ phrase }}";
+    navigator.clipboard.writeText(phrase);
+    alert('All words copied! Make sure to paste and save them securely.');
+}
+</script>
 {% endblock %}

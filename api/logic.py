@@ -70,8 +70,7 @@ def execute_db(query, params=(), returning_id=False):
         conn.close()
 
 def generate_seed_phrase():
-    words = mnemo.wordlist
-    return " ".join(secrets.choice(words) for _ in range(3))
+    return mnemo.generate(strength=256)
 
 def generate_invite_code():
     chars = string.ascii_uppercase + string.digits
@@ -79,7 +78,7 @@ def generate_invite_code():
 
 def create_wallet(seed_phrase):
     phrase = seed_phrase.strip().lower()
-    if len(phrase.split()) != 3:
+    if not mnemo.check(phrase):
         return False
     
     invite_code = generate_invite_code()
@@ -96,7 +95,7 @@ def create_wallet(seed_phrase):
 
 def login_wallet(seed_phrase):
     phrase = seed_phrase.strip().lower()
-    if len(phrase.split()) != 3:
+    if not mnemo.check(phrase):
         return None
     return query_db("SELECT * FROM users WHERE seed_phrase = ?", (phrase,), one=True)
 

@@ -2,10 +2,10 @@
 {% block content %}
 <div class="card">
     <h1>Access Wallet</h1>
-    <p>Enter your 3-word phrase to unlock your wallet.</p>
+    <p>Enter your 24-word backup phrase to unlock your wallet.</p>
     
     <form method="POST">
-        <textarea name="seed_phrase" placeholder="word1 word2 word3" required style="height: 80px;"></textarea>
+        <textarea name="seed_phrase" placeholder="Enter all 24 words separated by spaces..." required></textarea>
         <button type="submit" class="btn btn-primary">Unlock Wallet</button>
     </form>
     
