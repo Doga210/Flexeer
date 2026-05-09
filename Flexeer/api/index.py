@@ -1,17 +1,93 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+import sys
+import os
 
-app = Flask(__name__)
+# إضافة المسار الحالي لتمكين استيراد logic
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-# بيانات تجريبية (سيتم استبدالها بقاعدة بيانات لاحقاً)
-user_data = {
-    "balance": 100.0,
-    "currency": "USD"
-}
+import logic
+
+app = Flask(__name__, template_folder="../templates")
+app.secret_key = "flexeer_secret_key_123"
 
 @app.route('/')
 def index():
-    return render_template('index.html', data=user_data)
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = logic.login_user(username, password)
+        if user:
+            session['user_id'] = user['id']
+            return redirect(url_for('dashboard'))
+        else:
+            flash("اسم المستخدم أو كلمة المرور غير صحيحة", "error")
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        ref_by = request.form.get('ref_by')
+        if logic.register_user(username, password, ref_by):
+            flash("تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول.", "success")
+            return redirect(url_for('login'))
+        else:
+            flash("اسم المستخدم موجود بالفعل أو حدث خطأ", "error")
+    return render_template('register.html', ref=request.args.get('ref', ''))
+
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = logic.get_user_by_id(session['user_id'])
+    txs = logic.get_transactions(session['user_id'])
+    return render_template('dashboard.html', user=user, transactions=txs)
+
+@app.route('/daily')
+def daily():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    success, message = logic.daily_reward(session['user_id'])
+    flash(message, "success" if success else "error")
+    return redirect(url_for('dashboard'))
+
+@app.route('/transfer', methods=['POST'])
+def transfer():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    receiver_username = request.form.get('receiver')
+    try:
+        amount = float(request.form.get('amount', 0))
+    except ValueError:
+        flash("المبلغ غير صحيح", "error")
+        return redirect(url_for('dashboard'))
+    
+    receiver = logic.get_user_by_username(receiver_username)
+    if not receiver:
+        flash("المستلم غير موجود", "error")
+    elif receiver['id'] == session['user_id']:
+        flash("لا يمكنك التحويل لنفسك", "error")
+    else:
+        result = logic.send_money(session['user_id'], receiver['id'], amount)
+        flash(result, "success" if "بنجاح" in result else "error")
+    
+    return redirect(url_for('dashboard'))
+
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
-

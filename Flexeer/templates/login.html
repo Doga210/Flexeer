@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="card">
+    <h1>تسجيل الدخول</h1>
+    <form method="POST">
+        <div class="form-group">
+            <label>اسم المستخدم</label>
+            <input type="text" name="username" required>
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور</label>
+            <input type="password" name="password" required>
+        </div>
+        <button type="submit">دخول</button>
+    </form>
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="{{ url_for('register') }}" style="color: var(--text-muted); text-decoration: none;">ليس لديك حساب؟ سجل الآن</a>
+    </div>
+</div>
+{% endblock %}
