@@ -39,15 +39,14 @@ def login():
 def register():
     if request.method == 'POST':
         seed_phrase = request.form.get('seed_phrase')
-        ref_by = request.form.get('ref_by')
-        if logic.register_user(seed_phrase, ref_by):
+        if logic.register_user(seed_phrase):
             flash("Account created! You can now log in using your phrase.", "success")
             return redirect(url_for('login'))
         else:
             flash("Invalid phrase or account already exists", "error")
     
     new_phrase = logic.generate_seed_phrase()
-    return render_template('register.html', seed_phrase=new_phrase, ref=request.args.get('ref', ''))
+    return render_template('register.html', seed_phrase=new_phrase)
 
 @app.route('/forgot-password')
 def forgot_password():
