@@ -2,3 +2,4 @@ Flask
 Werkzeug
 telethon
 psycopg2-binary
+mnemonic

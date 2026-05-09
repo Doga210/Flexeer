@@ -15,8 +15,9 @@ def setup_database():
     cursor.execute(f'''
         CREATE TABLE IF NOT EXISTS users (
             id {id_type},
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
+            seed_phrase TEXT UNIQUE NOT NULL,
+            username TEXT,
+            password TEXT,
             balance REAL DEFAULT 5.0,
             invite_code TEXT UNIQUE NOT NULL,
             referred_by TEXT,

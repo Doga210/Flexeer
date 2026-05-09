@@ -26,40 +26,33 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = logic.login_user(username, password)
+        seed_phrase = request.form.get('seed_phrase')
+        user = logic.login_user(seed_phrase)
         if user:
             session['user_id'] = user['id']
             return redirect(url_for('dashboard'))
         else:
-            flash("Incorrect username or password", "error")
+            flash("Invalid Seed Phrase", "error")
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        seed_phrase = request.form.get('seed_phrase')
         ref_by = request.form.get('ref_by')
-        if logic.register_user(username, password, ref_by):
-            flash("Registration successful! You can now log in.", "success")
+        if logic.register_user(seed_phrase, ref_by):
+            flash("Account created! You can now log in using your phrase.", "success")
             return redirect(url_for('login'))
         else:
-            flash("Username already exists or an error occurred", "error")
-    return render_template('register.html', ref=request.args.get('ref', ''))
+            flash("Invalid phrase or account already exists", "error")
+    
+    new_phrase = logic.generate_seed_phrase()
+    return render_template('register.html', seed_phrase=new_phrase, ref=request.args.get('ref', ''))
 
-@app.route('/forgot-password', methods=['GET', 'POST'])
+@app.route('/forgot-password')
 def forgot_password():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        new_password = request.form.get('new_password')
-        if logic.reset_password(username, new_password):
-            flash("Password reset successful! You can now log in.", "success")
-            return redirect(url_for('login'))
-        else:
-            flash("Username not found", "error")
-    return render_template('forgot_password.html')
+    flash("In seed phrase systems, your phrase IS your access. If you lost it, the account cannot be recovered.", "error")
+    return redirect(url_for('login'))
 
 @app.route('/dashboard')
 def dashboard():

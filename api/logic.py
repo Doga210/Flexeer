@@ -4,6 +4,7 @@ import string
 import os
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from mnemonic import Mnemonic
 
 # Try to import psycopg2 for PostgreSQL support
 try:
@@ -22,6 +23,8 @@ DAILY_REWARD = 0.1
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "flexeer.db")
 DATABASE_URL = os.environ.get('DATABASE_URL')
+
+mnemo = Mnemonic("english")
 
 def get_db():
     if DATABASE_URL and HAS_PSG:
@@ -69,17 +72,25 @@ def execute_db(query, params=(), returning_id=False):
     conn.close()
     return last_id
 
+def generate_seed_phrase():
+    return mnemo.generate(strength=256) # 24 words
+
 def generate_ref_code():
     chars = string.ascii_uppercase + string.digits
     return "FLX-" + ''.join(secrets.choice(chars) for _ in range(6))
 
-def register_user(username, password, ref_by=None):
+def register_user(seed_phrase, ref_by=None):
+    if not mnemo.check(seed_phrase):
+        return False
+    
     my_code = generate_ref_code()
-    hashed_password = generate_password_hash(password)
     try:
+        # Use first 3 words as a public 'display name'
+        display_name = " ".join(seed_phrase.split()[:3]) + "..."
+        
         user_id = execute_db(
-            "INSERT INTO users (username, password, balance, invite_code, referred_by) VALUES (?, ?, ?, ?, ?)",
-            (username, hashed_password, SIGNUP_BONUS, my_code, ref_by),
+            "INSERT INTO users (seed_phrase, username, balance, invite_code, referred_by) VALUES (?, ?, ?, ?, ?)",
+            (seed_phrase, display_name, SIGNUP_BONUS, my_code, ref_by),
             returning_id=True
         )
         
@@ -92,34 +103,27 @@ def register_user(username, password, ref_by=None):
             if referrer:
                 execute_db("UPDATE users SET balance = balance + ? WHERE id = ?", (REF_REWARD, referrer['id']))
                 execute_db("INSERT INTO transactions (user_id, amount, type, details) VALUES (?, ?, 'REF_REWARD', ?)", 
-                           (referrer['id'], REF_REWARD, f"New referral: {username}"))
+                           (referrer['id'], REF_REWARD, f"New referral"))
         return True
     except Exception as e:
         print(f"Registration error: {e}")
         return False
 
-def login_user(username, password):
-    user = query_db("SELECT * FROM users WHERE username = ?", (username,), one=True)
-    if user and check_password_hash(user['password'], password):
-        return user
-    return None
+def login_user(seed_phrase):
+    if not mnemo.check(seed_phrase.strip()):
+        return None
+    user = query_db("SELECT * FROM users WHERE seed_phrase = ?", (seed_phrase.strip(),), one=True)
+    return user
 
 def get_user_by_id(user_id):
     return query_db("SELECT * FROM users WHERE id = ?", (user_id,), one=True)
 
 def get_user_by_username(username):
+    # This might return multiple if display names clash, but it's used for transfers
     return query_db("SELECT * FROM users WHERE username = ?", (username,), one=True)
 
 def get_transactions(user_id):
     return query_db("SELECT * FROM transactions WHERE user_id = ? ORDER BY timestamp DESC", (user_id,))
-
-def reset_password(username, new_password):
-    user = query_db("SELECT id FROM users WHERE username = ?", (username,), one=True)
-    if user:
-        hashed_password = generate_password_hash(new_password)
-        execute_db("UPDATE users SET password = ? WHERE id = ?", (hashed_password, user['id']))
-        return True
-    return False
 
 def daily_reward(user_id):
     user = query_db("SELECT last_daily FROM users WHERE id = ?", (user_id,), one=True)

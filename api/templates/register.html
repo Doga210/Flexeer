@@ -2,24 +2,36 @@
 
 {% block content %}
 <div class="card">
-    <h1>Create Account</h1>
+    <h1>Create Your Wallet</h1>
+    <p style="color: var(--error); text-align: center; font-weight: bold; margin-bottom: 20px;">
+        ⚠️ IMPORTANT: Save these 24 words safely. If you lose them, you lose your account forever.
+    </p>
+    
+    <div style="background: #0f172a; padding: 20px; border-radius: 12px; border: 1px dashed var(--primary); margin-bottom: 20px; word-spacing: 10px; line-height: 2; text-align: center; font-family: monospace; font-size: 1.1em;" id="phrase-box">
+        {{ seed_phrase }}
+    </div>
+    
+    <button onclick="copyPhrase()" style="background: var(--card-bg); border: 1px solid var(--primary); color: var(--primary); margin-bottom: 20px;">📋 Copy Seed Phrase</button>
+
     <form method="POST">
-        <div class="form-group">
-            <label>Username</label>
-            <input type="text" name="username" required>
-        </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" name="password" required>
-        </div>
+        <input type="hidden" name="seed_phrase" value="{{ seed_phrase }}">
         <div class="form-group">
             <label>Referral Code (Optional)</label>
             <input type="text" name="ref_by" value="{{ ref }}">
         </div>
-        <button type="submit">Create Account</button>
+        <button type="submit" style="background: var(--success);">I've Saved It, Create Account</button>
     </form>
+    
     <div style="text-align: center; margin-top: 20px;">
-        <a href="{{ url_for('login') }}" style="color: var(--text-muted); text-decoration: none;">Already have an account? Log in</a>
+        <a href="{{ url_for('login') }}" style="color: var(--text-muted); text-decoration: none;">Already have a wallet? Login</a>
     </div>
 </div>
+
+<script>
+function copyPhrase() {
+    const text = document.getElementById('phrase-box').innerText;
+    navigator.clipboard.writeText(text);
+    alert('Seed phrase copied! Store it safely.');
+}
+</script>
 {% endblock %}
