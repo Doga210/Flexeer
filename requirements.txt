@@ -4,3 +4,10 @@ telethon
 psycopg2-binary
 mnemonic
 pyTelegramBotAPI
+mnemonic
+bip-utils
+eth-account
+web3
+tronpy
+cryptography
+requests
