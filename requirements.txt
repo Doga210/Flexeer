@@ -3,3 +3,4 @@ Werkzeug
 telethon
 psycopg2-binary
 mnemonic
+pyTelegramBotAPI
