@@ -78,18 +78,22 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
 
 
-import telebot
-import os
 
-BOT_TOKEN = os.getenv("TELEGRAM_TOKEN", "8776861769:AAFOTjPvo8H-Jg7lZ_OU34agHOyZxHG5a3w")
-bot = telebot.TeleBot(BOT_TOKEN)
+try:
+    import telebot
+    import os
+    BOT_TOKEN = "8776861769:AAFOTjPvo8H-Jg7lZ_OU34agHOyZxHG5a3w"
+    bot = telebot.TeleBot(BOT_TOKEN)
 
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    update = telebot.types.Update.de_json(request.get_json(force=True))
-    bot.process_new_updates([update])
-    return 'ok', 200
+    @bot.message_handler(commands=['start'])
+    def start(message):
+        bot.reply_to(message, "🏦 أهلاً بك في Flexeer Wallet!")
 
-@bot.message_handler(commands=['start'])
-def start(message):
-    bot.reply_to(message, "🏦 أهلاً بك في Flexeer Wallet!")
+    @app.route('/webhook', methods=['POST'])
+    def webhook():
+        from flask import request
+        update = telebot.types.Update.de_json(request.get_json(force=True))
+        bot.process_new_updates([update])
+        return 'ok', 200
+except Exception as e:
+    print(f"Bot error: {e}")
