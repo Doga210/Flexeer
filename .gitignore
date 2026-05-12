@@ -1,0 +1,7 @@
+.env
+wallets/
+security/
+*.session
+__pycache__/
+*.pyc
+flexeer.db

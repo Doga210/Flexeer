@@ -76,3 +76,18 @@ def logout():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
+
+import telebot
+TOKEN = "8776861769:AAFOTjPvo8H-Jg7lZ_OU34agHOyZxHG5a3w"
+bot = telebot.TeleBot(TOKEN)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    import json
+    update = telebot.types.Update.de_json(request.get_json())
+    bot.process_new_updates([update])
+    return 'ok', 200
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.reply_to(message, "🏦 أهلاً بك في Flexeer Wallet!")
